@@ -1,0 +1,8 @@
+All files are standalone examples.
+Compile and run:
+
+    gcc file.c && ./a.out 
+
+for example, or give the executable a name:
+
+    gcc slow.c -o slow.c && ./slow

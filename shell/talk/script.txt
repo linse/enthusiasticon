@@ -1,0 +1,114 @@
+Hi, I'm Steffi and I work at Etsy.com as a Software Engineer.
+Let's build a shell. 
+
+What is a shell?
+When the computer boots up, it loads the operating system kernel.
+The shell is a thing ENCLOSING the core of the operating system or OS.
+The KERNEL MODE is a "privileged mode" in which commands can run for operations close to the hardware, it's a special safe space for that. 
+And the shell is a different space that surrounds the operating system's kernel. Shell -- Kernel -- makes sense.
+It's where we can interact with the system to run commands.
+We are building a tiny shell! Very simplified.
+Our shell should have a prompt where we can input things, it should parse our user input,
+run some built-in commands for job control,
+and of course run other system commands and show their output.
+
+Read input (prompt.c)
+To read input we have to create the main loop of the shell.
+Maybe some of have heard about the Read-Eval-Print-Loop of some programming languages.
+This is the system's REPL!
+So, we need a main function, and a loop. While (1).
+First step is printing the prompt.
+Then it's time to get a line of user input, with fgets we get MAXLINE characters from the standard input.
+The standard input is usually the keyboard.. or maybe a terminal if you connnect from elsewhere.
+Don't forget to check for reading errors and for the end of file.
+Then we remove the trailing newline from the input and can evaluate it.
+Here, we print it out.
+Aand, yeah, we have to include a bunch of libraries to do all this. (man 3 printf)
+The manual pages are super useful by telling us how the C library functions work, and what includes they need.
+Ok, that was easy. Now we have a shell that's very lazy. It doesn't run anything.
+
+Parse commands (parse.c)
+It does not even understand what we told it.
+To do so, it has to parse the commandline, that means it has to read it and make sense of it and understand it's structure.
+What is the underlying structure of a command? 
+We are defining a data structure in C for this.
+It contains the number of arguments, the argument list including the command itself, and a variable telling us which builtin command it is, or if it is one at all.
+Then we have to write a function to parse the line we got from fgets.
+It is also a while loop - but we are stepping through the line character by character splitting it up into words called tokens.
+We are stating that backslash T, backslash R and backslash N are delimiters between those tokens.
+We throw out the delimiters and break out of the loop if we are at the end of the file.
+Tokens are read char by char up to the next delimiter.
+We terminate the token string with a null character, as you do with all strings in C.
+We advance a character, and continue our loop.
+After having read all the arguments, we end the argument list with a NULL pointer, and we check if the command is a builtin command.
+Last thing is checking for an ampersand to see if the job should be running in the background.
+Now, our shell can understand what we wrote, but still doesn't act on it.
+
+System calls (man execvp)
+To execute a command at the level of the OS, we have to make a system call.
+The mother of all systemcalls is called execvp, and is executing any process.
+Let's look at it's man page - ah, it seems to be a whole family.
+It says "execute a file". That's right, a program is nothing more than a file we wrote code in. 
+And then we make that file executeable.
+What happens when a file is executed?
+
+Run a program (execvp.c)
+Let's try it out. Let's build an example, let's run ls. 
+Hi there is printed and then it prints the result of ls. It does NOT print and done.
+Why is that?
+It replaces the current process image with a new process image.
+That does not mean it starts a new process, it just swaps in a new image. 
+We could say it morphs the current program into another program.
+That's a peculiar system call!
+It is also interesting in terms of return values. 
+If it returns, an error has occured, normally it just runs the other program it morphed into.
+Ok awesome, we can run a command!
+Or maybe not so awesome - in this way our shell would become useless after one line of input.
+How do we make our shell not run away with the command we are running?
+Or can we let it morph into the new command and STILL be responsive at the same time?
+
+Fork + children (man fork)
+How can we SOLVE the problem of the new process taking over our shell? To tackle this, we can call FORK.
+Fork takes a process, and it makes another identical one.
+Let's look at this example. (vi fork.c) So what would it print out?
+Before the fork we have one program running, afterwards we have two programs running!
+Parent forking returns the pid of the child, usually it's the parent + 1.
+Here we see the parent runs first.
+Can we let the child run first?
+To do this, we can use another system call. WAIT gets a pid and waits for that process to finish.
+We can let the parent wait for it's child to make sure the child runs first.
+So fork is strangely interesting, too.
+
+Combine fork and execvp. We get a shell! (shell.c)
+If we combine fork and execvp, we can use the child process to run the command, keeping our shell alive as the parent.
+What does this look like in practice?
+  What does a real eval function look like?  Remember we left off after parsing?
+We should ignore commands that are empty.
+Then we have to distinguish between system commands and shell builtin commands.
+Good thing we prepared a field named "builtin" for that in our struct. 
+Also, running a command can be done in the foreground or background, that's why we pass bg here.
+  Let's look at the runSystemCommand function!
+We need to record the childPid in order to decide what different things to do for parent and child.
+So after doing the fork, we destinguish two cases, based on the childPID: the child case and the parent case.
+The child can run the command. This is where we call execvp with our prepared struct, from the parsing.
+Here we just have to check the exit status to see if the command failed and we are done. Usually, it shouldn't fail.
+For the parent we have to distinguish whether we run our command in the forground or background.
+If it's in the background, we print the childPID and the child is gonna do it's thing.
+But if it should be run in the foreground, we have to wait for the child to return.
+
+Let's try this out with a slow process in the background, this one is just waiting around. (gcc shell.c && ./a.out)
+It works!
+./slow
+And we can issue commands in the forground!
+ls
+pwd
+cd
+whoops - that didn't work. our shell has no sense of directory.
+There are a few other things we would like our shell to do.
+We have a mechanism in place for builtin commands but they don't do anything yet.
+For builtin job control commands we'd need a joblist, so we'd have to learn about linked lists in C.
+For the redirection we'd need to read up on filehandles.
+
+This all takes more than 10 minutes, but I encourage you to explore, starting from this basic shell, make it more awesome!
+Thank you for listening. :D
+(lolcat bye)

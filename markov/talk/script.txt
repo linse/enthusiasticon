@@ -1,0 +1,70 @@
+Hi, I am Steffi, I work at Etsy.com, and I would like to replace myself with a very small shell script.
+But let me explain. The shell script I replaced myself with should speak just like me.
+How does it know what to say?
+This can be done with a markov bot.
+
+Recently, there was a whole epidemia of markov bots:
+The erowid re
+Markov Bots Epidemia
+--------------------
+Erowid Recruiter
+Doom to Puppet
+King James Programming
+Ebooks bots on twitter
+
+Markov Model
+------------
+Hidden "Idea" behind natural form (Plato)
+Probabilistic model that "knows" the outcome.
+Probability.
+
+Markov Property
+---------------
+
+N-Grams - 2 grams - pairs of words in sequence
+-------
+sschirmer ~/enthuisiasticon $ cat bigrams.py
+#!/usr/bin/python
+
+import sys
+
+fname = sys.argv[1]
+previous = ''
+with open(fname) as f:
+    for line in f:
+        for word in line.split():
+            if previous != '':
+              print previous, word
+            previous = word
+
+
+Corpus & learning = getting parameters for the prob. model
+------------
+linse ~/linse_ebooks $ ebooks archive linse corpus/linse.json
+Currently 2657 tweets for linse
+No new tweets
+linse ~/linse_ebooks $ ebooks consume corpus/linse.json
+Reading json corpus from corpus/linse.json
+Removing commented lines and sorting mentions
+Tokenizing 3325 statements and 1723 mentions
+Ranking keywords
+Corpus consumed to /home/linse/linse_ebooks/model/linse.model
+-----------
+Given an occurrence of Word A, what is the statistical likelihood that it is followed by Word B?
+http://www.zachwhalen.net/posts/twitter-bots-markov-chains-and-large-slices-of-clarity
+
+Step 1 is counting them
+./bigrams.py script.txt | sort | uniq -c | sort -nr | less
+
+Normalize by count of all ngrams to get a probability
+sschirmer ~/enthuisiasticon $ ./bigrams.py neverendingPrep.txt | wc -l
+  111872
+
+Count probabilities for model
+./bigrams.py neverendingPrep.txt | sort | uniq -c | sort -nr | awk '{print $1/111872,$2,$3}' | less
+./bigrams.py neverendingPrep.txt | sort | uniq -c | sort -nr | awk '{print $1/111872,$2,$3}' > model
+-----------
+How to generate a sentence in Python?
+Model with sentence start and end states.
+Model as dict.
+Generate: Start from start state, weighted choice until end state. 
