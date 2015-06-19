@@ -30,43 +30,46 @@ enum builtin_t parseBuiltin(struct command *cmd) {
     }
 }
 
+void error(char *msg) {
+  printf("Error: %s", msg);
+  exit(0);
+}
+
 int parse(const char *cmdline, struct command *cmd) {
     static char array[MAXLINE];          // local copy of command line
     const char delims[10] = " \t\r\n";   // argument delimiters
-    char *buf = array;                   // ptr that traverses command line
-    char *next;                          // ptr to the end of the current arg
-    char *endbuf;                        // ptr to the end of the cmdline string
+    char *line = array;                   // ptr that traverses command line
+    char *token;                          // ptr to the end of the current arg
+    char *endline;                        // ptr to the end of the cmdline string
     int is_bg;                           // background job?
 
-    if (cmdline == NULL) {
-        (void) fprintf(stderr, "Error: command line is NULL\n");
-        return -1;
-    }
+    if (cmdline == NULL) 
+        error("command line is NULL\n");
 
-    (void) strncpy(buf, cmdline, MAXLINE);
-    endbuf = buf + strlen(buf);
+    (void) strncpy(line, cmdline, MAXLINE);
+    endline = line + strlen(line);
 
     // build argv list
     cmd->argc = 0;
 
-    while (buf < endbuf) {
+    while (line < endline) {
         // skip delimiters
-        buf += strspn (buf, delims);
-        if (buf >= endbuf) break;
+        line += strspn (line, delims);
+        if (line >= endline) break;
 
-        // Find next delimiter
-        next = buf + strcspn (buf, delims);
+        // Find token delimiter
+        token = line + strcspn (line, delims);
 
         // terminate the token
-        *next = '\0';
+        *token = '\0';
 
-        // Record token as the next argument
-        cmd->argv[cmd->argc++] = buf;
+        // Record token as the token argument
+        cmd->argv[cmd->argc++] = line;
 
         // Check if argv is full
         if (cmd->argc >= MAXARGS-1) break;
 
-        buf = next + 1;
+        line = token + 1;
     }
 
     // argument list must end with a NULL pointer
@@ -82,11 +85,6 @@ int parse(const char *cmdline, struct command *cmd) {
         cmd->argv[--cmd->argc] = NULL;
 
     return is_bg;
-}
-
-void error(char *msg) {
-  printf("Error: %s", msg);
-  exit(0);
 }
 
 void runSystemCommand(struct command *cmd, int bg) {
