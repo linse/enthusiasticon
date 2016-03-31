@@ -49,7 +49,7 @@ def allBigrams(bigrams,fname):
                     else: # new word!
                         bigrams = addBigram(bigrams, previous, word)
                 previous = word
-            bigrams = addBigram(bigrams, word, 'END')
+        bigrams = addBigram(bigrams, word, 'END')
     return bigrams
 
 def addBigram(bigrams, first, second):
